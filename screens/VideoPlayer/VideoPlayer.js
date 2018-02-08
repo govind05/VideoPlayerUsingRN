@@ -1,9 +1,20 @@
 import React from 'react';
-import { StyleSheet, Text, View, Button, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Button, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
 import Video from 'react-native-video';
 import * as RNFS from 'react-native-fs';
 
 export default class VideoPlayer extends React.Component {
+  static navigationOptions = {
+    title: 'Home',
+    headerStyle: {
+      display: 'none',
+    },
+    headerTintColor: '#fff',
+    headerTitleStyle: {
+      fontWeight: 'bold',
+    },
+  };
+
   state = {
     viewmode: Dimensions.get('window').height > Dimensions.get('window').width ? 'portrait' : 'landscape',
     muted: false,
@@ -22,6 +33,7 @@ export default class VideoPlayer extends React.Component {
     this.setState({
       viewmode: Dimensions.get("window").height > 500 ? "portrait" : "landscape"
     })
+    this.toggleFullscreen();
 
   }
   changePlaybackHandler = () => {
@@ -40,9 +52,8 @@ export default class VideoPlayer extends React.Component {
   }
 
   toggleFullscreen(){
-    this.player.presentFullscreenPlayer();
+    this.player.presentFullscreenPlayer()
   }
-
 
   render() {
     console.log(this.props.navigation.state.params.path)
@@ -85,7 +96,7 @@ export default class VideoPlayer extends React.Component {
     let playbackButton = (<View style={styles.playbackBtn}>
       <Button title={playback} onPress={this.changePlaybackHandler} />
       <Button title={mute} onPress={this.changeMuteHandler} />
-      {/* <Button title='Fullscreen' onPress={this.}/> */}
+      {/* <Button title='Fullscreen' onPress={this.toggleFullscreen}/> */}
     </View>);
     let changePlayback = null;
     let activeOpacity = 1;
@@ -98,13 +109,16 @@ export default class VideoPlayer extends React.Component {
     const regex = /^[a-zA-Z0-9.]+\.(mp4|avi)?$/i;
     const video = regex.exec(this.props.navigation.state.params.name);
     return (
+
       <View style={styles.container} >
+      <StatusBar hidden
+      />
         <TouchableOpacity
           activeOpacity={activeOpacity}
           style={styles.backgroundVideo}
           onPress={changePlayback}
         >
-          <Video source={{ uri: this.props.navigation.state.params.path }}
+          <Video source={{ uri: this.props.navigation.state.params.path, type: 'avi' }}
             ref={(video) => {
               this.player = video;
             }}
@@ -117,6 +131,7 @@ export default class VideoPlayer extends React.Component {
             playInBackground={false}
             // Callback when video cannot be loaded
             style={styles.backgroundVideo}
+            onLoadStart = {() => this.player.presentFullscreenPlayer()}
 
           />
 
@@ -142,6 +157,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    height:'100%',
+    width:'100%',
     zIndex: 2,
   },
   playbackBtn: {
