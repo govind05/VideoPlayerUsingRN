@@ -1,31 +1,36 @@
 import React from 'react';
-import { StyleSheet, Text, View, Button, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Button, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import * as RNFS from 'react-native-fs';
 import * as UUID from 'uuid';
-import {StackNavigator} from 'react-navigation';
+import { StackNavigator } from 'react-navigation';
 
 export default class Home extends React.Component {
-  static navigationOptions ={
-    title:'Home'
+  static navigationOptions = {
+    title: 'Home'
   };
 
   state = {
     viewmode: Dimensions.get('window').height > Dimensions.get('window').width ? 'portrait' : 'landscape',
-    videos: []
+    videos: [],
+    touched: false
   }
 
   constructor(props) {
     super(props);
     Dimensions.addEventListener("change", this.updateStyles);
+    setTimeout(() => {
+      this.setState({
+        touched: false
+      })
+    }, 1)
   }
 
   componentWillMount() {
     this.findAllVideos(RNFS.ExternalStorageDirectoryPath);
-
   }
 
   componentWillUnmount() {
-    Dimensions.removeEventListener("change", this.updateStyles)
+    Dimensions.removeEventListener("change", this.updateStyles);
   }
 
   updateStyles = (dims) => {
@@ -39,7 +44,7 @@ export default class Home extends React.Component {
     RNFS.readDir(path)
       .then(res => {
         // return(RNFS.readDir(res[0].path));
-        const regex = /^[a-zA-Z0-9.]+\.(mp4|avi)?$/i;
+        const regex = /^[a-zA-Z0-9.]+\.(mp4|mkv)?$/i;
         const download = res.filter(r => (regex.test(r.name)));
         let videos = this.state.videos;
         videos = videos.concat(download);
@@ -47,7 +52,7 @@ export default class Home extends React.Component {
         res.map(r => {
           if (r.isDirectory) {
             const reg = /^.[A-Z0-9a-z]+$/i;
-            if(!(reg.test(r.name))){
+            if (!(reg.test(r.name))) {
               return this.findAllVideos(r.path);
             }
           }
@@ -57,25 +62,38 @@ export default class Home extends React.Component {
       .catch(err => { });
   }
 
-  startVideoPlayer = (path,name) => {  
+  startVideoPlayer = (path, name) => {
+    this.setState({
+      touched: true
+    })
+    setTimeout(() => {
+      this.setState({
+        touched: false
+      })
+    }, 0)
     const { navigate } = this.props.navigation;
     navigate(
-      'Video',{path,name}
+      'Video', { path, name }
     )
-  } 
+  }
 
   render() {
     let videoList = this.state.videos.map(video => (
-      <TouchableOpacity key={video.path} onPress={() => this.startVideoPlayer(video.path,video.name)}>
+      <TouchableOpacity key={video.path} onPress={() => this.startVideoPlayer(video.path, video.name)}>
         <View style={styles.list}>
           <Text>{video.name}</Text>
-          <Text style={{fontSize:10}}>{video.path}</Text>
+          <Text style={{ fontSize: 10 }}>{video.path}</Text>
         </View>
       </TouchableOpacity>
     ))
+    if (this.state.touched) {
+      videoList = <ActivityIndicator />
+      
+    }
+
     return (
       <View style={styles.container}>
-        <View style={{marginBottom: 10 }}>
+        <View style={{ marginBottom: 10 }}>
           <Text style={{ fontSize: 20, borderBottomWidth: 2 }} >Videos</Text>
         </View>
         <View >
@@ -92,15 +110,13 @@ const styles = StyleSheet.create({
     // alignItems: 'center',
     // justifyContent: 'center',
     backgroundColor: 'white',
-    marginTop:10,
-    marginLeft: 10,
-    marginRight:10
+    padding: 10
   },
   list: {
-    borderWidth:2,
+    borderWidth: 2,
     height: 55,
-    padding:10,
-    marginBottom:10
+    padding: 10,
+    marginBottom: 10
   }
 
 });
