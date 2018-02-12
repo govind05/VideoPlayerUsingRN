@@ -26,6 +26,7 @@ MERGED from [com.facebook.react:react-native:0.52.0] G:\projects\VideoPlayer\and
 		ADDED from G:\projects\VideoPlayer\android\app\src\main\AndroidManifest.xml:7:22-75
 uses-sdk
 ADDED from G:\projects\VideoPlayer\android\app\src\main\AndroidManifest.xml:9:5-11:41
+MERGED from [VideoPlayer:react-native-gesture-handler:unspecified] G:\projects\VideoPlayer\android\app\build\intermediates\exploded-aar\VideoPlayer\react-native-gesture-handler\unspecified\AndroidManifest.xml:7:5-9:41
 MERGED from [VideoPlayer:react-native-vector-icons:unspecified] G:\projects\VideoPlayer\android\app\build\intermediates\exploded-aar\VideoPlayer\react-native-vector-icons\unspecified\AndroidManifest.xml:7:5-9:41
 MERGED from [VideoPlayer:react-native-fs:unspecified] G:\projects\VideoPlayer\android\app\build\intermediates\exploded-aar\VideoPlayer\react-native-fs\unspecified\AndroidManifest.xml:7:5-9:41
 MERGED from [VideoPlayer:react-native-video:unspecified] G:\projects\VideoPlayer\android\app\build\intermediates\exploded-aar\VideoPlayer\react-native-video\unspecified\AndroidManifest.xml:7:5-9:41

@@ -5,20 +5,19 @@ import * as RNFS from 'react-native-fs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ProgressBar from 'react-native-progress/Bar';
 
+import SeekVideo from '../TouchResponder/SeekVideo';
+
 export default class VideoPlayer extends React.Component {
-  PAUSE_BUTTON = <Icon name='md-pause' size={50} style={{ color: '#ccc', marginRight: '10%',  }} />
+  PAUSE_BUTTON = <Icon name='md-pause' size={50} style={{ color: '#ccc', marginRight: '10%', }} />
   PLAY_BUTTON = <Icon name='md-play' size={50} style={{ color: '#ccc', marginRight: '10%', }} />
   MUTE_BUTTON = <Icon name='md-volume-off' size={50} style={{ color: '#ccc', marginLeft: '10%', }} />
-  UNMUTE_BUTTON = <Icon name='md-volume-up' size={50} style={{ color: '#ccc', marginLeft: '10%',}} />
+  UNMUTE_BUTTON = <Icon name='md-volume-up' size={50} style={{ color: '#ccc', marginLeft: '10%', }} />
+
   static navigationOptions = {
     title: 'Home',
     headerStyle: {
       display: 'none',
-    },
-    headerTintColor: '#fff',
-    headerTitleStyle: {
-      fontWeight: 'bold',
-    },
+    }
   };
 
   state = {
@@ -31,7 +30,9 @@ export default class VideoPlayer extends React.Component {
     currentTime: 0.0,
     screenControlsVisible: false,
     totalDuration: {},
-    timeLeft: {}
+    timeLeft: {},
+    seek: '',
+    seekTimeValue: 0
   }
 
   constructor(props) {
@@ -100,7 +101,7 @@ export default class VideoPlayer extends React.Component {
       seconds,
       stringTime
     }
-    console.log(totalTime)
+    // console.log(totalTime)
     return totalDuration;
   }
 
@@ -139,15 +140,52 @@ export default class VideoPlayer extends React.Component {
     goBack();
   }
 
-  // onTouchHandler = (data) => {
-  //   console.log(data);
-  // }
+  seekChangeHandler = (seekTime) => {
 
+    const seekTimeValue = (((seekTime) / Dimensions.get('window').width) * 60);
+    if (seekTime > 0) {
+      this.setState({
+        seek: 'forward',
+        seekTimeValue: parseInt(seekTimeValue) + 's'
+      })
+    } else {
+      this.setState({
+        seek: 'rewind',
+        seekTimeValue: parseInt(seekTimeValue) + 's'
+      })
+    }
+    // console.log(seekTimeValue, this.state.duration);
+    // if (0 > this.state.currentTime + seekTimeValue) {
+      // seekTime = this.state.currentTime - this.state.currentTime;
+    // } else if (this.state.currentTime + seekTimeValue > this.state.duration) {
+    //   seekTime = this.state.duration + 0;
+    // } else {
+      seekTime = this.state.currentTime + seekTimeValue;
+
+    // }
+    const timeLeft = this.timeToString(seekTime, this.state.totalDuration);
+
+    this.setState({
+      currentTime: seekTime,
+      timeLeft,
+    }, () => {
+      this.player.seek(seekTime)
+      let progress = this.getProgressPercentage();
+      setTimeout(() => {
+        this.setState({
+          seek: '',
+          progress
+        })
+      }, 500)
+    });
+  }
   render() {
     let color = this.state.viewmode === 'portrait' ? 'white' : 'black';
     let fontsize = this.state.viewmode === 'portrait' ? 25 : 35;
     let PAUSE_ICON = <Icon name='md-pause' size={50} style={{ padding: 2, color: color }} />
     let MUTE_ICON = <Icon name='md-volume-off' size={40} style={{ color: color, }} />
+    let FASTFORWARD_ICON = <Icon name='md-fastforward' size={70} style={{ color: '#fff', }} />
+    let REWIND_ICON = <Icon name='md-rewind' size={70} style={{ color: '#fff', }} />
     let playback = !this.state.paused ? this.PAUSE_BUTTON : this.PLAY_BUTTON;
     let mute = !this.state.muted ? this.UNMUTE_BUTTON : this.MUTE_BUTTON;
     let text = null;
@@ -189,8 +227,8 @@ export default class VideoPlayer extends React.Component {
             <View>
               <Text style={{ fontSize: fontsize, color: '#ccc' }}>{this.state.totalDuration.stringTime}</Text>
             </View>
-          </View>          
-          <ProgressBar progress={this.state.progress} color='#cccccc' width={Dimensions.get('window').width} />
+          </View>
+          <ProgressBar progress={this.state.progress} color='#cccccc' width={Dimensions.get('window').width} animate={false} />
         </View>);
     }
     let onScreenControls = null;
@@ -201,37 +239,44 @@ export default class VideoPlayer extends React.Component {
     let player;
     const regex = /^[a-zA-Z0-9.]+\.(mp4|mkv)?$/i;
     const video = regex.exec(this.props.navigation.state.params.name);
-    console.log(this.state.totalDuration, this.state.timeLeft)
+    let bottom = this.state.viewmode === 'portrait' ? '38%' : '30%';
+    let showSeek = this.state.seek === 'forward'
+      ? <View style={[styles.seek, { right: '25%', bottom: bottom }]} >{FASTFORWARD_ICON}<Text style={{ fontSize: 30, color: '#fff' }} >{this.state.seekTimeValue}</Text></View>
+      : this.state.seek === 'rewind' ? <View style={[styles.seek, { left: '25%', bottom: bottom }]} >{REWIND_ICON}<Text style={{ fontSize: 30, color: '#fff' }}>{this.state.seekTimeValue}</Text></View> : null
+    // console.log(this.state.totalDuration, this.state.timeLeft)
     return (
-      <View style={styles.container} >
-        <StatusBar hidden
-        />
-        <TouchableOpacity
-          activeOpacity={activeOpacity}
-          style={styles.backgroundVideo}
-          onPress={onScreenControls}
-        >
-          <Video source={{ uri: this.props.navigation.state.params.path }}
-            ref={(video) => {
-              this.player = video;
-            }}
-            rate={1.0}
-            volume={1.0}
-            muted={this.state.muted}
-            paused={this.state.paused}
-            resizeMode='contain'
-            repeat={false}
-            playInBackground={false}
-            // Callback when video cannot be loaded
-            style={styles.backgroundVideo}
-            onLoad={this.onLoadHandler}
-            onProgress={this.onProgressHandler}
-            onEnd={this.onEndHandler}
+      <SeekVideo seekChange={this.seekChangeHandler}>
+        <View style={styles.container} >
+          <StatusBar hidden
           />
-          {text}
-        </TouchableOpacity>
-        {playbackButton}
-      </View>
+          <TouchableOpacity
+            activeOpacity={activeOpacity}
+            style={styles.backgroundVideo}
+            onPress={onScreenControls}
+          >
+            <Video source={{ uri: this.props.navigation.state.params.path }}
+              ref={(video) => {
+                this.player = video;
+              }}
+              rate={1.0}
+              volume={1.0}
+              muted={this.state.muted}
+              paused={this.state.paused}
+              resizeMode='contain'
+              repeat={false}
+              playInBackground={false}
+              // Callback when video cannot be loaded
+              style={styles.backgroundVideo}
+              onLoad={this.onLoadHandler}
+              onProgress={this.onProgressHandler}
+              onEnd={this.onEndHandler}
+            />
+            {text}
+            {showSeek}
+          </TouchableOpacity>
+          {playbackButton}
+        </View>
+      </SeekVideo>
     );
 
   }
@@ -268,5 +313,12 @@ const styles = StyleSheet.create({
     bottom: '0%',
     backgroundColor: 'rgba(0,0,0,0.5)',
     zIndex: 4
+  },
+  seek: {
+    flex: 1,
+    position: 'absolute',
+    
+    zIndex: 4
   }
+
 });

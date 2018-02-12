@@ -138,6 +138,15 @@
     </item>
     <item
         is-multidex="false"
+        jar="G:\projects\VideoPlayer\android\app\build\intermediates\exploded-aar\VideoPlayer\react-native-gesture-handler\unspecified\jars\classes.jar"
+        jumboMode="false"
+        optimize="true"
+        revision="23.0.1"
+        sha1="66ccbf744c87da671b0b34c0f4116c022e76acf8">
+        <dex dex="G:\projects\VideoPlayer\android\app\build\intermediates\pre-dexed\debug\VideoPlayer-react-native-gesture-handler-unspecified_41eb95f8651192f244b675186bb7d445c645681f.jar" />
+    </item>
+    <item
+        is-multidex="false"
         jar="G:\projects\VideoPlayer\android\app\build\intermediates\exploded-aar\com.facebook.react\react-native\0.52.0\jars\classes.jar"
         jumboMode="false"
         optimize="true"

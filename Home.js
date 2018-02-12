@@ -44,15 +44,18 @@ export default class Home extends React.Component {
     RNFS.readDir(path)
       .then(res => {
         // return(RNFS.readDir(res[0].path));
-        const regex = /^[a-zA-Z0-9.]+\.(mp4|mkv)?$/i;
+        // console.log(res);
+        const regex = /^[a-zA-Z0-9.]+\.(mp4)?$/i;
         const download = res.filter(r => (regex.test(r.name)));
+        // console.log(download);
         let videos = this.state.videos;
         videos = videos.concat(download);
         this.setState({ videos });
         res.map(r => {
-          if (r.isDirectory) {
-            const reg = /^.[A-Z0-9a-z]+$/i;
+          if (r.isDirectory()) {
+            const reg = /^\.[A-Z0-9a-z]+$/i;
             if (!(reg.test(r.name))) {
+              // console.log(r.isDirectory(),r.name)
               return this.findAllVideos(r.path);
             }
           }
