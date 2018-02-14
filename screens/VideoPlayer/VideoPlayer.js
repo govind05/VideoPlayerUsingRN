@@ -1,7 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View, Button, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
+import { StyleSheet, Text, View, Button, TouchableOpacity, TouchableWithoutFeedback, Dimensions, StatusBar } from 'react-native';
 import Video from 'react-native-video';
-import * as RNFS from 'react-native-fs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import ProgressBar from 'react-native-progress/Bar';
 
@@ -39,6 +38,9 @@ export default class VideoPlayer extends React.Component {
     super(props);
     Dimensions.addEventListener("change", this.updateStyles);
   }
+  componentWillMount() {
+    this.props.navigation.state.params.func();
+  }
 
   componentWillUnmount() {
     Dimensions.removeEventListener("change", this.updateStyles)
@@ -55,14 +57,16 @@ export default class VideoPlayer extends React.Component {
       return {
         screenControlsVisible: !prevState.screenControlsVisible
       }
+    }, () => {
+      if (this.state.screenControlsVisible) {
+        setTimeout(() => {
+          this.setState({
+            screenControlsVisible: false
+          })
+        }, 1500);
+      }
     });
-    if (this.state.screenControlsVisible) {
-      setTimeout(() => {
-        this.setState({
-          screenControlsVisible: false
-        })
-      }, 1500);
-    }
+
   }
   changePlaybackHandler = () => {
     this.setState(prevState => {
@@ -156,11 +160,11 @@ export default class VideoPlayer extends React.Component {
     }
     // console.log(seekTimeValue, this.state.duration);
     // if (0 > this.state.currentTime + seekTimeValue) {
-      // seekTime = this.state.currentTime - this.state.currentTime;
+    // seekTime = this.state.currentTime - this.state.currentTime;
     // } else if (this.state.currentTime + seekTimeValue > this.state.duration) {
     //   seekTime = this.state.duration + 0;
     // } else {
-      seekTime = this.state.currentTime + seekTimeValue;
+    seekTime = this.state.currentTime + seekTimeValue;
 
     // }
     const timeLeft = this.timeToString(seekTime, this.state.totalDuration);
@@ -179,20 +183,29 @@ export default class VideoPlayer extends React.Component {
       }, 500)
     });
   }
+
+  backHandler = () => {
+    this.props.navigation.goBack();
+  }
+
   render() {
     let color = this.state.viewmode === 'portrait' ? 'white' : 'black';
     let fontsize = this.state.viewmode === 'portrait' ? 25 : 35;
-    let PAUSE_ICON = <Icon name='md-pause' size={50} style={{ padding: 2, color: color }} />
-    let MUTE_ICON = <Icon name='md-volume-off' size={40} style={{ color: color, }} />
+    let titleRight = this.state.viewmode === 'portrait' ? '130%' : '500%';
+    let pauseIconTop = this.state.screenControlsVisible ? '13%' : 0;
+    let muteIconTop = this.state.screenControlsVisible ? '43%' : 0;
+    let PAUSE_ICON = <Icon name='md-pause' size={50} style={{ padding: 2, color: color, top: pauseIconTop }} />
+    let MUTE_ICON = <Icon name='md-volume-off' size={40} style={{ color: color }} />
     let FASTFORWARD_ICON = <Icon name='md-fastforward' size={70} style={{ color: '#fff', }} />
     let REWIND_ICON = <Icon name='md-rewind' size={70} style={{ color: '#fff', }} />
     let playback = !this.state.paused ? this.PAUSE_BUTTON : this.PLAY_BUTTON;
     let mute = !this.state.muted ? this.UNMUTE_BUTTON : this.MUTE_BUTTON;
     let text = null;
     let display = this.state.viewmode === 'landscape' ?
-      <TouchableOpacity onPress={this.changeMuteHandler}>
-        {this.state.muted ? MUTE_ICON : null}
-      </TouchableOpacity> : null;
+      <View style={{ top: pauseIconTop }}>
+        <TouchableOpacity onPress={this.changeMuteHandler}>
+          {this.state.muted ? MUTE_ICON : null}
+        </TouchableOpacity></View> : null;
 
     if (this.state.paused) {
       text = <View style={{ zIndex: 3, flex: 1, alignItems: 'flex-end', marginRight: '3%' }}>
@@ -207,6 +220,11 @@ export default class VideoPlayer extends React.Component {
       </View>
     }
     let playbackButton = null;
+    let upperBar = null;
+    const regex = /^[a-zA-Z0-9.]+\.(mp4|mkv|m4a|fmp4|webm|wav|mpeg-ts|mpeg-ps|flv|adts)?$/i;
+    const video = regex.exec(this.props.navigation.state.params.name);
+    let videoName = this.props.navigation.state.params.name.split('.' + video[1])
+    console.log(videoName[0])
     if (this.state.screenControlsVisible || this.state.viewmode === 'portrait') {
       playbackButton = (
         <View style={styles.playbackBtnControl}>
@@ -228,8 +246,17 @@ export default class VideoPlayer extends React.Component {
               <Text style={{ fontSize: fontsize, color: '#ccc' }}>{this.state.totalDuration.stringTime}</Text>
             </View>
           </View>
-          <ProgressBar progress={this.state.progress} color='#cccccc' width={Dimensions.get('window').width} animate={false} />
+          <ProgressBar progress={this.state.progress} color='#cccccc' width={Dimensions.get('window').width} />
         </View>);
+      upperBar =
+        <View style={styles.upperBar}>
+          <TouchableOpacity onPress={this.backHandler}>
+            <Icon name="md-arrow-round-back" color="#ccc" size={50} />
+          </TouchableOpacity>
+          <View style={{ right: titleRight, top: '1%' }} >
+            <Text style={{ fontSize: 25, color: '#ccc' }}>{videoName[0]}</Text>
+          </View>
+        </View>
     }
     let onScreenControls = null;
     let activeOpacity = 1;
@@ -237,8 +264,7 @@ export default class VideoPlayer extends React.Component {
       onScreenControls = this.screenControlsHandler;
     }
     let player;
-    const regex = /^[a-zA-Z0-9.]+\.(mp4|mkv)?$/i;
-    const video = regex.exec(this.props.navigation.state.params.name);
+
     let bottom = this.state.viewmode === 'portrait' ? '38%' : '30%';
     let showSeek = this.state.seek === 'forward'
       ? <View style={[styles.seek, { right: '25%', bottom: bottom }]} >{FASTFORWARD_ICON}<Text style={{ fontSize: 30, color: '#fff' }} >{this.state.seekTimeValue}</Text></View>
@@ -249,6 +275,7 @@ export default class VideoPlayer extends React.Component {
         <View style={styles.container} >
           <StatusBar hidden
           />
+          {upperBar}
           <TouchableOpacity
             activeOpacity={activeOpacity}
             style={styles.backgroundVideo}
@@ -277,6 +304,7 @@ export default class VideoPlayer extends React.Component {
           {playbackButton}
         </View>
       </SeekVideo>
+
     );
 
   }
@@ -314,10 +342,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     zIndex: 4
   },
+  upperBar: {
+    flex: 1,
+    flexDirection: 'row',
+    width: '100%',
+    position: 'absolute',
+    justifyContent: 'space-between',
+    top: '0%',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 4,
+    height: '15%',
+    paddingRight: 25,
+    paddingLeft: 10
+  },
   seek: {
     flex: 1,
     position: 'absolute',
-    
+
     zIndex: 4
   }
 

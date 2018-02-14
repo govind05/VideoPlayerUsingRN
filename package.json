@@ -17,6 +17,7 @@
     "preset": "react-native"
   },
   "dependencies": {
+    "babel-plugin-transform-remove-console": "^6.9.0",
     "react": "16.2.0",
     "react-native": "0.52.0",
     "react-native-fs": "^2.9.9",

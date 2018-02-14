@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, Button, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Button, FlatList, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import * as RNFS from 'react-native-fs';
 import * as UUID from 'uuid';
 import { StackNavigator } from 'react-navigation';
@@ -12,7 +12,8 @@ export default class Home extends React.Component {
   state = {
     viewmode: Dimensions.get('window').height > Dimensions.get('window').width ? 'portrait' : 'landscape',
     videos: [],
-    touched: false
+    touched: false,
+    loading: true
   }
 
   constructor(props) {
@@ -25,12 +26,18 @@ export default class Home extends React.Component {
     }, 1)
   }
 
-  componentWillMount() {
-    this.findAllVideos(RNFS.ExternalStorageDirectoryPath);
+  componentDidMount() {
+    this.findAll(RNFS.ExternalStorageDirectoryPath)
+      .then(() => this.setState({
+        loading: false
+      }))
   }
 
   componentWillUnmount() {
     Dimensions.removeEventListener("change", this.updateStyles);
+    this.setState({
+      touched: false
+    })
   }
 
   updateStyles = (dims) => {
@@ -39,59 +46,82 @@ export default class Home extends React.Component {
     })
 
   }
+  findAll = (path) => {
+    return new Promise((resolve, reject) => {
+      this.findAllVideos(path)
+        .then(() => setTimeout(() => resolve('finsi'), 2000))
+    })
+  }
 
-  findAllVideos = (path) => {
-    RNFS.readDir(path)
+  findAllVideos =  (path) => {
+    return RNFS.readDir(path)
       .then(res => {
         // return(RNFS.readDir(res[0].path));
         // console.log(res);
-        const regex = /^[a-zA-Z0-9.]+\.(mp4)?$/i;
-        const download = res.filter(r => (regex.test(r.name)));
+        const regex = /^[a-zA-Z0-9.]+\.(mp4|mkv|m4a|fmp4|webm|wav|mpeg-ts|mpeg-ps|flv|adts)?$/i;
+        let download = res.filter(r => (regex.test(r.name)));
         // console.log(download);
+        download = download.map(dl => {
+          return {
+            ...dl,
+            key: dl.path
+          }
+        })
         let videos = this.state.videos;
         videos = videos.concat(download);
+        console.log(videos, this.state.loading)
         this.setState({ videos });
-        res.map(r => {
+
+        res.map((r, i) => {
           if (r.isDirectory()) {
-            const reg = /^\.[A-Z0-9a-z]+$/i;
+            const reg = /^\.[A-Z0-9a-z_[\]{}()]+$/i;
             if (!(reg.test(r.name))) {
-              // console.log(r.isDirectory(),r.name)
-              return this.findAllVideos(r.path);
+              this.findAllVideos(r.path)
             }
           }
         })
-        // console.log(this.state.videos)
       })
       .catch(err => { });
   }
-
+  stopLoad = () => {
+    this.setState({
+      touched: false
+    })
+  }
   startVideoPlayer = (path, name) => {
     this.setState({
       touched: true
     })
-    setTimeout(() => {
-      this.setState({
-        touched: false
-      })
-    }, 0)
+    let func = this.stopLoad;
     const { navigate } = this.props.navigation;
     navigate(
-      'Video', { path, name }
+      'Video', { path, name, func }
     )
   }
 
   render() {
-    let videoList = this.state.videos.map(video => (
-      <TouchableOpacity key={video.path} onPress={() => this.startVideoPlayer(video.path, video.name)}>
-        <View style={styles.list}>
-          <Text>{video.name}</Text>
-          <Text style={{ fontSize: 10 }}>{video.path}</Text>
-        </View>
-      </TouchableOpacity>
-    ))
+    let videoList = <ActivityIndicator size="large" color="#0000ff" />
+    if (!this.state.loading) {
+      console.log(this.state.loading)
+      videoList = <FlatList
+        data={this.state.videos}
+        renderItem={
+          (video) => (
+            <TouchableOpacity onPress={() => this.startVideoPlayer(video.item.path, video.item.name)}>
+              <View style={styles.list}>
+                <Text style={{ fontSize: 15, color: '#333' }}>{video.item.name}</Text>
+                <Text style={{ fontSize: 10, color: '#aaa' }}>{video.item.path}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+      />
+    } else {
+      videoList = <ActivityIndicator size={80} color="#333"/>
+    }
+
     if (this.state.touched) {
       videoList = <ActivityIndicator />
-      
+
     }
 
     return (
@@ -117,7 +147,7 @@ const styles = StyleSheet.create({
   },
   list: {
     borderWidth: 2,
-    height: 55,
+    height: 65,
     padding: 10,
     marginBottom: 10
   }
